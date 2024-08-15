@@ -4,7 +4,7 @@ const Category = require("../models/Category");
 const User = require("../models/User");
 
 exports.createProduct = async (req, res) => {
-  const { name, price, quantity, category } = req.body;
+  const { name, price, quantity, category, description } = req.body;
   // res.json({data:req.user})
   if (!req.body.name) {
     return res.status(422).json({ error: "field name is required" });
@@ -20,6 +20,9 @@ exports.createProduct = async (req, res) => {
   // }
   if (!req.body.category) {
     return res.status(422).json({ error: "field category is required" });
+  }
+  if (!req.body.description) {
+    return res.status(422).json({ error: "field description is required" });
   }
   if (!(await Category.findById(req.body.category))) {
     return res.status(422).json({ error: "category not not found" });
@@ -38,6 +41,8 @@ exports.createProduct = async (req, res) => {
       quantity,
       category: req.body.category,
       user: current.id,
+      description,
+      avatar: req.file ? req.file.path : null,
     });
     return res.status(201).json({
       message: "success products create",
@@ -52,17 +57,17 @@ exports.getAllProducts = async (req, res) => {
   try {
     const all_datas = await Product.find()
       .populate({ path: "category", select: "_id name" })
-      .populate({ path: "user", select: "_id name email" });
+      .populate({ path: "user", select: "_id name email username" });
     res.status(200).json({ success: true, all_data: all_datas });
   } catch (error) {
-    return res.status(500).json({ success: true, message: error });
+    return res.status(500).json({ message: error });
   }
 };
 
 exports.getProductsWithout = async (req, res) => {
   try {
     const all_datas = await Product.find()
-      .select("_id name price")
+      .select("_id name price avatar")
       .populate({ path: "user", select: "_id name email" });
     res.status(200).json({ all_data: all_datas });
   } catch (error) {
@@ -75,10 +80,10 @@ exports.getProductsByUser = async (req, res) => {
   // }
   try {
     const all_datas = await Product.find({ user: req.params.id })
-      .select("_id name price")
+      .select("_id name price avatar")
       .populate({ path: "category", select: "_id name" })
       .populate({ path: "user", select: "_id name email" });
-    res.status(200).json({ success: true, all_data: all_datas });
+    res.status(200).json({ all_data: all_datas });
   } catch (error) {
     return res.status(500).json({ message: error });
   }
@@ -91,7 +96,7 @@ exports.findProductsById = async (req, res) => {
     }
     const all_datas = await Product.findById(req.params.id).populate({
       path: "category",
-      select: "_id name",
+      select: "_id name avatar",
     });
     if (!all_datas) {
       return res.status(404).json({ error: "not found" });
